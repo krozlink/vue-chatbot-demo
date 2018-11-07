@@ -3,110 +3,40 @@
 
     <div v-if="!isMinimized" id="chat-window" class="card">
       <header id="chat-header" class="card-header">
-        <p class="card-header-title">
-          Chat Bot
-        </p>
-
+        <p class="card-header-title">Xena - Warrior Chat Bot </p>
         <span class="icon is-large chat-close" v-on:click="toggleWindow">
           <i class="mdi mdi-24px mdi-close-circle-outline"></i>
         </span>
       </header>
 
-      <div v-if="loginState !== 'show_chat'" id="chat-login" class="card-content">
+      <div v-if="pageState !== 'show_chat'" id="chat-forms" class="card-content">
         <section class="hero">
           <div class="hero-body">
             <div class="container">
-              <a v-if="loginState === 'loading'" class="button is-large is-info is-outlined is-loading">Login</a>
-
-              <div v-if="loginState === 'show_login_form'">
-                <p class="subtitle">Log in with your username and password</p>
-
-                <div class="field">
-                  <p class="control has-icons-left has-icons-right">
-                    <input class="input is-medium" type="text" placeholder="Username">
-                    <span class="icon is-small is-left">
-                      <i class="mdi mdi-24px mdi-account"></i>
-                    </span>
-                  </p>
-                </div>
-                <div class="field">
-                  <p class="control has-icons-left">
-                    <input class="input is-medium"  type="password" placeholder="Password">
-                    <span class="icon is-small is-left">
-                      <i class="mdi mdi-24px mdi-lock"></i>
-                    </span>
-                  </p>
-                </div>
-                <div class="field">
-                  <p class="control">
-                    <button class="button is-info is-medium is-fullwidth" v-on:click="doLogin">
-                     Login
-                    </button>
-
-                    <button class="button is-text is-fullwidth" v-on:click="signUp">
-                      Sign Up
-                    </button>
-                  </p>
-                </div>
-              </div>
-
-
-              <div v-if="loginState === 'show_register_form'">
-                <p class="subtitle">Sign up with a new account</p>
-
-                <div class="field">
-                  <p class="control has-icons-left has-icons-right">
-                    <input class="input is-medium" v-model="register.user" type="text" placeholder="Username">
-                    <span class="icon is-small is-left">
-                      <i class="mdi mdi-24px mdi-account"></i>
-                    </span>
-                  </p>
-                </div>
-                <div class="field">
-                  <p class="control has-icons-left has-icons-right">
-                    <input class="input is-medium" v-model="register.email" type="email" placeholder="Email Address">
-                    <span class="icon is-small is-left">
-                      <i class="mdi mdi-24px mdi-email"></i>
-                    </span>
-                  </p>
-                </div>
-                <div class="field">
-                  <p class="control has-icons-left">
-                    <input class="input is-medium" v-model="register.password" type="password" placeholder="Password">
-                    <span class="icon is-small is-left">
-                      <i class="mdi mdi-24px mdi-lock"></i>
-                    </span>
-                  </p>
-                </div>
-                <div class="field">
-                  <div class="control">
-                    <button class="button is-info is-medium is-fullwidth" v-on:click="doRegister">Sign Up</button>
-                  </div>
-                  <div class="control">
-                    <button class="button is-text is-fullwidth" v-on:click="registerCancel">Login</button>
-                  </div>
-                </div>
-              </div>
-
-
+              <a v-if="pageState === 'loading'" id="chat-loading" class="button is-large is-info is-outlined is-loading">Login</a>
+              <login v-if="pageState === 'show_login_form'"></login>
+              <register v-if="pageState === 'show_register_form'"> </register>
+              <confirm-email v-if="pageState === 'show_register_confirm'"> </confirm-email>
             </div>
           </div>
         </section>
       </div>
 
-      <div v-if="loginState === 'show_chat'" id="chat-content" class="card-content">
+      <div v-if="pageState === 'show_chat'" id="chat-content" class="card-content" ref="chat">
         <article v-for="msg in $store.state.messages" :key="msg.id" class="message"
           :class="{
-            'is-info': msg.type === 'bot',
+            'is-info': msg.type === 'bot' && msg.dialogState !== 'error',
             'bot': msg.type === 'bot',
-            'is-success': msg.type === 'human',
+            'is-success': msg.type === 'human' && msg.dialogState !== 'error',
             'human': msg.type === 'human',
+
+            'is-danger': msg.dialogState === 'error',
           }">
           <div class="message-body">{{ msg.text }}</div>
         </article>
       </div>
 
-      <footer v-if="loginState === 'show_chat'" id="chat-footer" class="card-footer">
+      <footer v-if="pageState === 'show_chat'" id="chat-footer" class="card-footer">
         <div class="field has-addons">
           <div class="control is-expanded">
             <input
@@ -136,52 +66,49 @@
 </template>
 
 <script>
+import Login from './components/Login.vue';
+import Register from './components/Register.vue';
+import ConfirmEmail from './components/ConfirmEmail.vue';
+
 export default {
   name: 'app',
+  components: {
+    Login,
+    Register,
+    ConfirmEmail,
+  },
   data() {
     return {
       message: '',
-
-      login: {
-        user: '',
-        password: '',
-      },
-      register: {
-        user: '',
-        email: '',
-        password: '',
-      },
     };
+  },
+  created() {
+    this.$store.dispatch('autoLogin');
   },
   computed: {
     isMinimized() {
       return this.$store.state.isUIMinimized;
     },
-    loginState() {
-      return this.$store.state.loginState;
+    pageState() {
+      return this.$store.state.pageState;
     },
   },
   methods: {
     toggleWindow() {
       this.$store.commit('toggleWindow');
+      if(!this.$store.state.isUIMinimized) {
+        
+        setTimeout(() =>{
+          const container = this.$el.querySelector('#chat-content');
+          container.scrollTop = container.scrollHeight;
+        });
+      }
     },
     sendMessage() {
       if (this.message !== '') {
-        this.$store.dispatch('addMessage', this.message);
+        this.$store.dispatch('sendMessage', {text: this.message, container: this.$el.querySelector('#chat-content')});
         this.message = '';
       }
-    },
-    registerCancel() {
-      this.$store.commit('setLoginState', 'show_login_form');
-    },
-    doLogin() {
-      this.$store.dispatch('login', { user: this.login.user, password: this.login.password });
-    },
-    doRegister() {
-      this.$store.dispatch('register', { user: this.register.user, email: this.register.email, password: this.register.password });
-    },
-    signUp() {
-      this.$store.commit('setLoginState', 'show_register_form');
     },
   },
 };
@@ -231,7 +158,7 @@ section .hero-body {
   flex-direction: column;
 }
 
-#chat-login {
+#chat-forms {
   padding: 0px;
   width: 100%;
 
@@ -318,5 +245,9 @@ section .hero-body {
   }
 }
 
-
+#chat-loading {
+  display: block;
+  width: 100px;
+  margin: auto;
+}
 </style>

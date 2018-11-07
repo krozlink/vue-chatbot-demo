@@ -1,4 +1,4 @@
-import Cognito from 'amazon-cognito-identity-js';
+import * as Cognito from 'amazon-cognito-identity-js';
 
 const PoolData = {
   UserPoolId: process.env.VUE_APP_AWS_COGNITO_USER_POOL_ID,
@@ -51,6 +51,34 @@ function Register(user, email, password) {
   });
 }
 
+function GetCredentials() {
+  return new Promise((resolve, reject) => {
+    const userPool = new Cognito.CognitoUserPool(PoolData);
+    const cognitoUser = userPool.getCurrentUser();
+
+    if (cognitoUser !== null) {
+      cognitoUser.getSession((err, session) => {
+        if (err) {
+          reject(sessionErr);
+          return;
+        }
+
+        const login = `cognito-idp.${process.env.VUE_APP_AWS_REGION}.amazonaws.com/${process.env.VUE_APP_AWS_COGNITO_USER_POOL_ID}`;
+        const credentials = new AWS.CognitoIdentityCredentials({ 
+          IdentityPoolId: process.env.VUE_APP_AWS_COGNITO_IDENTITY_POOL_ID,
+          Logins: {
+            [login]: session.getIdToken().getJwtToken(),
+          }
+        });
+      
+        resolve(credentials);
+        console.log(`session validity: ${session.isValid()}`);
+      });
+    } else {
+      reject(new Error('No current user'));
+    }
+  });
+}
 
 function GetCurrentUser() {
   return new Promise((resolve, reject) => {
@@ -68,8 +96,10 @@ function GetCurrentUser() {
 
         cognitoUser.getUserData((err, data) => {
           if (err) {
+            console.log(err);
             reject(err);
           } else {
+            console.log(data);
             resolve(data);
           }
         });
@@ -80,8 +110,56 @@ function GetCurrentUser() {
   });
 }
 
+function ConfirmRegistration(user, code) {
+  return new Promise((resolve, reject) => {
+
+    const userPool = new Cognito.CognitoUserPool(PoolData);
+
+    const cognitoUser = new Cognito.CognitoUser({
+      Username: user,
+      Pool: userPool,
+    });
+
+    cognitoUser.confirmRegistration(authData, true, (err, result) => {
+      if(err) {
+        console.error(err);
+        reject(err);
+      } else {
+        console.log(result);
+        resolve(result);
+      }
+    });
+  });
+}
+
+function ResendCode(user) {
+  return new Promise((resolve, reject) => {
+
+
+    const userPool = new Cognito.CognitoUserPool(PoolData);
+
+    const cognitoUser = new Cognito.CognitoUser({
+      Username: user,
+      Pool: userPool,
+    });
+
+    cognitoUser.confirmRegistration((err, result) => {
+      if(err) {
+        console.error(err);
+        reject(err);
+        return;
+      }
+      console.log('Code resent');
+      resolve(result);
+    });
+  });
+}
+
 export default {
   Login,
   Register,
   GetCurrentUser,
+  ConfirmRegistration,
+  ResendCode,
+  GetCredentials
 };

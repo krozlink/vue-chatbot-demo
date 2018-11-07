@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "amazon-cognito-identity-js": "^3.0.3",
+    "aws-sdk": "^2.350.0",
     "bulma": "^0.7.2",
     "vue": "^2.5.17",
     "vuex": "^3.0.1"
