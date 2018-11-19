@@ -8,15 +8,17 @@ function SendMessage(message) {
 
     return new Promise((resolve, reject) => {
         Auth.GetCredentials()
-        .then(cred => { 
-            AWS.config.credentials = cred;
+        .then( data => { 
+            AWS.config.credentials = data.credentials;
             const lex = new AWS.LexRuntime();
             const params = {
                 botAlias: '$LATEST',
                 botName: process.env.VUE_APP_BOT_NAME,
                 inputText: message,
                 userId: process.env.VUE_APP_USER_ID,
-                sessionAttributes: {},
+                sessionAttributes: {
+                    token: data.session.getIdToken().getJwtToken(),
+                },
             };
         
             lex.postText(params, (err, result) => {

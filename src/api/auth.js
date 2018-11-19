@@ -71,7 +71,7 @@ function GetCredentials() {
           }
         });
       
-        resolve(credentials);
+        resolve({credentials, session});
         console.log(`session validity: ${session.isValid()}`);
       });
     } else {

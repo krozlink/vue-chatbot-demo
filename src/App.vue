@@ -32,7 +32,7 @@
 
             'is-danger': msg.dialogState === 'error',
           }">
-          <div class="message-body">{{ msg.text }}</div>
+          <div class="message-body"><span class="message-text">{{ formatMessage(msg.text) }}</span></div>
         </article>
       </div>
 
@@ -109,6 +109,9 @@ export default {
         this.$store.dispatch('sendMessage', {text: this.message, container: this.$el.querySelector('#chat-content')});
         this.message = '';
       }
+    },
+    formatMessage(text) {
+      return text;
     },
   },
 };
@@ -229,6 +232,13 @@ section .hero-body {
       border-width: 0 0 0 4px;
     }
   }
+  
+  span.message-text {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-family: inherit;
+  }
+
 }
 
 #chat-footer {
