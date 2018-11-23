@@ -1,6 +1,9 @@
-# chatbot-demo
+### Setup
 
-## Project setup
+First provide AWS Cognito and Lex details in the environment variables file (.env)
+
+### Install
+
 ```
 npm install
 ```
@@ -13,9 +16,4 @@ npm run serve
 ### Compiles and minifies for production
 ```
 npm run build
-```
-
-### Lints and fixes files
-```
-npm run lint
 ```
